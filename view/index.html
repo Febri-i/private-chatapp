@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Home</title>
+	</head>
+	<link rel="stylesheet" href="style.css" />
+	<script defer>
+		const ACCOUNTDATA = {
+		    id: "",
+		    key: "",
+		    messages: {},
+		    contacts: {},
+		    blocked: {}
+		}
+		const WS_PORT = "<%WS_PORT%>"
+		const OFFER_ID_LENGTH = <%OFFER_ID_LENGTH%>
+		const FILEID_LENGTH = <%FILEID_LENGTH%>
+		const RTCID_LENGTH = <%RTCID_LENGTH%>
+		const CHUNK_SIZE = <%CHUNK_SIZE%>
+	</script>
+	<div id="loginContainer">
+		<div id="login">
+			<div id="loginJSON">
+				<span class="loginTitle">Log-in</span>
+				<label class="labelLogin" for="account">Account: </label
+				><input
+					autocomplete="off"
+					type="file"
+					accept=".json"
+					name="account"
+					id="account"
+				/>
+				<label class="labelLogin" for="logPassword">Password: </label
+				><input
+					autocomplete="off"
+					style="outline: none; font-family: 'SpaceMono'"
+					type="password"
+					name="logPassword"
+					id="logPassword"
+				/>
+
+				<button
+					id="loginbtn"
+					style="
+						display: block;
+						font-family: 'SpaceMono';
+						margin-top: 10px;
+						padding: 2px;
+						margin-left: auto;
+					"
+				>
+					Log-in
+				</button>
+			</div>
+			<div id="createAcc">
+				<span class="loginTitle"> Sign-in </span>
+				<label for="passwordInput" class="labelLogin">Password:</label>
+				<input
+					autocomplete="off"
+					id="passwordInput"
+					name="passwordInput"
+					style="outline: none; font-family: 'SpaceMono'"
+					type="password"
+				/>
+				<button id="signin" style="padding: 0 5px">Create!</button>
+			</div>
+		</div>
+	</div>
+	<body>
+		<div id="offer" style="display: none">
+			<span id="offerMsg" style="margin-right: 10px"></span
+			><button>Yes</button> <button>No</button>
+		</div>
+		<span id="alerter"></span>
+		<div id="main">
+			<div style="z-index: 3" class="hellbtn" id="tool">
+				<img
+					style="width: 30px; background-color: white"
+					src="/asset/icons/tool.svg"
+					alt="tool"
+				/>
+			</div>
+
+			<div class="hellbtn" id="msg">
+				<img
+					style="width: 30px; background-color: white"
+					src="/asset/icons/users.svg"
+					alt="msg"
+				/>
+			</div>
+
+			<div class="hellbtn" id="addcontact">
+				<img
+					style="width: 30px; background-color: white"
+					src="/asset/icons/user-plus.svg"
+					alt="addcontact"
+				/>
+			</div>
+			<div class="hellbtn" id="user">
+				<img
+					style="width: 30px; background-color: white"
+					src="/asset/icons/user.svg"
+					alt="user"
+				/>
+			</div>
+			<div class="hellbtn" id="savedata">
+				<img
+					style="width: 30px; background-color: white"
+					onclick="saveData()"
+					src="/asset/icons/save.svg"
+					alt="savedata"
+				/>
+			</div>
+
+			<div id="littlePopUp"></div>
+
+			<div id="search" style="border-bottom: 2px solid black">
+				<form id="chatqueryform">
+					<input type="text" name="keyword" id="chatquerykey" />
+					<input
+						type="image"
+						style="width: 25px; margin-right: 10px; padding: 2px"
+						src="/asset/icons/search.svg"
+						alt="Search Button"
+					/>
+				</form>
+			</div>
+			<div id="chatlist"></div>
+		</div>
+		<div id="chat">
+			<div
+				id="chatDef"
+				style="
+					width: 100%;
+					height: 100%;
+					background-color: rgb(240, 240, 240);
+					position: absolute;
+				"
+			></div>
+			<div id="profile">
+				<span id="chatName" style="font-size: 18px; font-weight: bold"
+					>name1</span
+				>
+				<button
+					type="submit"
+					id="chatOpt"
+					onclick="chatOpt(event)"
+					class="iconbtn"
+				>
+					<img
+						src="/asset/icons/menu.svg"
+						onclick="chatOpt(event)"
+						alt="Menu button"
+					/>
+				</button>
+			</div>
+			<div id="chatContent"></div>
+			<div id="sender">
+				<button
+					type="submit"
+					autocomplete="off"
+					onclick="pickFileUpInput()"
+					class="iconbtn"
+				>
+					<img
+						id="filePortal"
+						src="/asset/icons/upload.svg"
+						alt="Upload file"
+					/>
+				</button>
+				<input
+					type="file"
+					id="uploadInput"
+					style="visibility: hidden; position: absolute; left: -100%"
+				/>
+				<textarea
+					style="margin: 0 10px"
+					autocomplete="off"
+					name="senderInput"
+					id="senderInput"
+				></textarea>
+				<button type="submit" id="sendmsg" class="iconbtn">
+					<img
+						id="sendBtn"
+						style="width: 28px"
+						src="/asset/icons/send.svg"
+						alt="Menu button"
+					/>
+				</button>
+			</div>
+		</div>
+
+		<div id="progresses"></div>
+	</body>
+	<script defer>
+		let toggletoolbtn = false;
+
+		const pendingAlert = [];
+
+		function notify(message = "", duration = 0) {
+			if (!duration) duration = 300 * message.split(" ").length;
+
+			const alerter = document.getElementById("alerter");
+			if (alerter.style.bottom == "10px") {
+				pendingAlert.push(message);
+				return;
+			}
+			alerter.textContent = message;
+			alerter.style.bottom = "10px";
+			function finishAlertUP(ev) {
+				function finishAlertDown(ev) {
+					ev.target.removeEventListener(
+						"transitionend",
+						finishAlertDown
+					);
+					if (pendingAlert.length) {
+						notify(pendingAlert.shift(), duration);
+					}
+				}
+				ev.target.removeEventListener("transitionend", finishAlertUP);
+
+				setTimeout(() => {
+					ev.target.style.bottom = `-${
+						alerter.getBoundingClientRect().height
+					}px`;
+					ev.target.addEventListener(
+						"transitionend",
+						finishAlertDown
+					);
+				}, duration);
+			}
+
+			alerter.addEventListener("transitionend", finishAlertUP);
+		}
+
+		document.getElementById("tool").addEventListener("click", () => {
+			const buttons = document.getElementsByClassName("hellbtn");
+			toggletoolbtn = !toggletoolbtn;
+			if (toggletoolbtn) {
+				for (let index = 1; index < buttons.length; index++) {
+					buttons.item(index).style.transform = `translate(-10px, -${
+						55 * index + 10
+					}px)`;
+					buttons.item(index).style.opacity = 1;
+				}
+			} else {
+				for (let index = 1; index < buttons.length; index++) {
+					buttons.item(index).style.opacity = 0;
+					buttons.item(
+						index
+					).style.transform = `translate(-10px, -10px)`;
+				}
+			}
+
+			const popUp = document.getElementById("littlePopUp");
+			if (popUp.style.bottom == "10px") {
+				popUp.style.bottom =
+					-popUp.getBoundingClientRect().height + "px";
+				popUp.style.opacity = 0;
+				return;
+			}
+		});
+
+		document.getElementById("addcontact").addEventListener("click", () => {
+			togglePopUp(
+				`<form id="addContact"><input autocomplete="off" type="text" name="contactName" id="contactName" placeholder="Name"><input type="text" name="contactId" id="contactId" placeholder="Contact ID"><input type="image" src="/asset/icons/check.svg" onclick="addContact(event)" alt="Add contact"></form>`
+			);
+		});
+
+		document.getElementById("user").addEventListener("click", () => {
+			togglePopUp(
+				`<div style="height: 35px; display: grid; grid-gap: 5px; align-items: center; grid-template-columns: auto 25px; padding: 0 5px;"><span style="width: 100%; overflow-x: hidden;">${ACCOUNTDATA.id}</span><button type="submit" onclick="(()=>{navigator.clipboard.writeText = '${ACCOUNTDATA.id}'; notify('is copied');})()" class="iconbtn"><img src="/asset/icons/copy.svg"style="height: 25px;"alt="Menu button"></button></div>`
+			);
+		});
+
+		document.getElementById("msg").addEventListener("click", () => {
+			togglePopUp(`<div id="msgContainer">
+                <div id="suggestion" style="margin-bottom: 5px;"></div>
+                <form id="msgToForm" onsubmit="((e) => {e.preventDefault(); if(e.target.children[0].value.length == 16) document.getElementById('tool').click();openChat(e.target.children[0].value);})(event)">
+                    <input type="text" autocomplete="off" oninput="getSearch(event)" placeholder="ID" id="msgToId">
+                    <input type="image" style="padding-right: 5px;" src="asset/icons/mail.svg" alt="">
+                </form>
+            </div>`);
+		});
+
+		function togglePopUp(template = "") {
+			const popUp = document.getElementById("littlePopUp");
+			if (popUp.style.bottom == "10px") {
+				popUp.style.bottom =
+					-popUp.getBoundingClientRect().height + "px";
+				popUp.style.opacity = 0;
+
+				const divtemp = document.createElement("div");
+				divtemp.innerHTML = template;
+
+				if (divtemp.children[0].id == popUp.children[0].id) return;
+
+				function repopCb() {
+					popUp.removeEventListener("transitionend", repopCb);
+					togglePopUp(template);
+				}
+
+				popUp.addEventListener("transitionend", repopCb);
+				return;
+			}
+
+			popUp.innerHTML = template;
+			popUp.style.bottom = "10px";
+			popUp.style.opacity = 1;
+		}
+	</script>
+	<script src="script.js" defer></script>
+</html>

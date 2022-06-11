@@ -1,0 +1,13 @@
+{
+    "PORT" : 8080,
+    "WS_PORT": 8081,
+    "SECRET": "32longstringofsecretkeyxxxxxxxxx",
+    "IV": "16longcharacters",
+    "ASSET": "res://asset/",
+    "PENDINGDIR": "res://pendings/",
+    "VIEW": "res://view/",
+    "OFFER_ID_LENGTH": 8,
+    "RTCID_LENGTH": 8,
+    "FILEID_LENGTH": 8,
+    "CHUNK_SIZE": 16384
+}
